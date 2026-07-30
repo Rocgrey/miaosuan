@@ -242,8 +242,14 @@ tailwind.config = {
         <div id="paymentOverlay" class="hidden mt-4 text-center relative">
           <div class="bg-red-50 border border-red-200 rounded-xl p-4">
             <p class="text-sm text-ink font-medium mb-2">🔒 随喜一元，解锁卦辞</p>
-            <img id="paymentQrImg" src="" alt="支付宝收款码" class="w-40 h-40 mx-auto rounded-lg border border-gray-200 bg-white" style="display:none;">
-            <p id="paymentQrPlaceholder" class="text-xs text-gray-400 py-8">请先设置收款码图片</p>
+            <div id="qrImgContainer" class="cursor-pointer" onclick="document.getElementById('qrFileInput').click()">
+              <img id="paymentQrImg" src="" alt="点击上传收款码" class="w-40 h-40 mx-auto rounded-lg border border-gray-200 bg-white" style="display:none;">
+              <div id="qrUploadPlaceholder" class="w-40 h-40 mx-auto rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-gray-400">
+                <span class="text-2xl">📷</span>
+                <span class="text-xs mt-1">点击上传收款码</span>
+              </div>
+            </div>
+            <input type="file" id="qrFileInput" accept="image/*" onchange="App.handleQrUpload(event)" style="display:none;">
             <p class="text-xs text-gray-400 mt-2">扫码支付后点击下方按钮</p>
             <button onclick="App.unlockDivination()" class="btn-primary mt-2 text-sm">✅ 已完成付款 (¥1.00)</button>
           </div>
@@ -1105,28 +1111,46 @@ const App = {
   },
 
   loadQrImage() {
-    if (this.settings.qrImageUrl) {
+    // Load QR code from localStorage
+    const qrUrl = this.settings.qrImageUrl;
+    if (qrUrl) {
       const img = document.getElementById('paymentQrImg');
-      img.src = this.settings.qrImageUrl;
+      img.src = qrUrl;
       img.style.display = 'block';
-      document.getElementById('paymentQrPlaceholder').style.display = 'none';
+      document.getElementById('qrUploadPlaceholder').style.display = 'none';
     }
   },
 
+  handleQrUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      this.settings.qrImageUrl = dataUrl;
+      saveSettings(this.settings);
+      const img = document.getElementById('paymentQrImg');
+      img.src = dataUrl;
+      img.style.display = 'block';
+      document.getElementById('qrUploadPlaceholder').style.display = 'none';
+      this.toast('收款码已上传');
+    };
+    reader.readAsDataURL(file);
+  },
+
   showQrSettings() {
-    if (this.settings.qrImageUrl) {
-      document.getElementById('qrImageUrl').value = this.settings.qrImageUrl;
-    }
     document.getElementById('qrSettingsModal').classList.remove('hidden');
   },
 
   saveQrSettings() {
     const url = document.getElementById('qrImageUrl').value.trim();
-    this.settings.qrImageUrl = url;
-    saveSettings(this.settings);
+    if (url) {
+      this.settings.qrImageUrl = url;
+      saveSettings(this.settings);
+      this.loadQrImage();
+      this.toast('收款码已设置');
+    }
     this.closeModal('qrSettingsModal');
-    this.loadQrImage();
-    this.toast(url ? '收款码已设置' : '收款码已清除');
   },
 
   showModal(id) { document.getElementById(id).classList.remove('hidden'); },
