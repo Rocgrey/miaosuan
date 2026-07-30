@@ -35,7 +35,7 @@ tailwind.config = {
   .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
   .badge-wx { background: #07C160; color: #fff; font-size: 12px; padding: 3px 10px; border-radius: 10px; }
   .badge-ali { background: #1677FF; color: #fff; font-size: 12px; padding: 3px 10px; border-radius: 10px; }
-  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2C2C2C; color: #f5e6d0; padding: 10px 24px; border-radius: 20px; font-size: 14px; z-index: 999; animation: fadeIn 0.3s ease; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2C2C2C; color: #fff; padding: 12px 28px; border-radius: 20px; font-size: 15px; z-index: 9999; font-weight: 600; }
   @keyframes fadeIn { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
   #resultQR canvas, #resultQR img { margin: 0 auto; }
 </style>
@@ -130,9 +130,9 @@ function toast(msg) {
 
 function handleUpload(type, file) {
   if (!file) return;
-  const reader = new FileReader();
+  var reader = new FileReader();
   reader.onload = function(e) {
-    const url = e.target.result;
+    var url = e.target.result;
     if (type === 'wx') {
       wxDataUrl = url;
       document.getElementById('wxImg').src = url; document.getElementById('wxImg').style.display = 'block';
@@ -144,8 +144,16 @@ function handleUpload(type, file) {
       document.getElementById('aliPH').style.display = 'none'; document.getElementById('aliBox').classList.add('has-image');
       document.getElementById('aliClear').classList.remove('hidden');
     }
-    toast(type === 'wx' ? '✅ 微信收款码已上传' : '✅ 支付宝收款码已上传');
+    var msg = type === 'wx' ? '微信收款码已上传' : '支付宝收款码已上传';
+    document.getElementById('toast').textContent = msg;
+    document.getElementById('toast').style.display = 'block';
+    setTimeout(function(){ document.getElementById('toast').style.display = 'none'; }, 2000);
     checkReady();
+  };
+  reader.onerror = function() {
+    document.getElementById('toast').textContent = '上传失败，请重试';
+    document.getElementById('toast').style.display = 'block';
+    setTimeout(function(){ document.getElementById('toast').style.display = 'none'; }, 2000);
   };
   reader.readAsDataURL(file);
 }
@@ -212,12 +220,11 @@ function downloadQR() {
 
 function downloadPayHtml() {
   if (!payContent) return;
-  const blob = new Blob([payContent], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  var blob = new Blob([payContent], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
   a.href = url; a.download = 'pay.html'; a.click();
   URL.revokeObjectURL(url);
-  toast('📄 pay.html 已下载');
 }
 
 function toggleDeployDone() {
