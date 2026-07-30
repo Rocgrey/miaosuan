@@ -3,117 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>收款码合并 · 解析重组</title>
+<title>收款码合并</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{colors:{wx:'#07C160',ali:'#1677FF',ink:'#2C2C2C',paper:'#FDF9F5'}}}}</script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>tailwind.config={theme:{extend:{colors:{wx:'#07C160',ali:'#1677FF',ink:'#2C2C2C'}}}}</script>
 <style>
   body{font-family:-apple-system,system-ui,sans-serif;background:linear-gradient(135deg,#f8f5f0,#f0ece6);min-height:100vh}
   .card{background:#FFFDF8;border:1px solid #E8DCC8;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,.05)}
-  .up-box{border:2px dashed #d4c5a9;border-radius:12px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;transition:all .2s}
+  .up-box{border:2px dashed #d4c5a9;border-radius:12px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
   .up-box:hover{border-color:#b8945a;background:#fdf8f0}
-  .up-box.done{border:2px solid #07C160}
-  .up-box.done.ali{border-color:#1677FF}
   .up-box img{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;padding:6px}
   .btn{border:none;border-radius:10px;padding:12px 28px;font-size:16px;cursor:pointer;font-weight:600;transition:all .2s}
   .btn-p{background:linear-gradient(135deg,#2C2C2C,#4A4A4A);color:#fff}
   .btn-p:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.2)}
   .btn-p:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
-  .tag-wx{background:#07C160;color:#fff;font-size:12px;padding:3px 10px;border-radius:10px}
-  .tag-ali{background:#1677FF;color:#fff;font-size:12px;padding:3px 10px;border-radius:10px}
   .t{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#2C2C2C;color:#fff;padding:12px 28px;border-radius:20px;font-size:15px;z-index:9999;font-weight:600;white-space:nowrap}
-  .spin{border:3px solid #e0d8c8;border-top-color:#2C2C2C;border-radius:50%;width:24px;height:24px;animation:spin .8s linear infinite;display:inline-block}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  input[type=text]{border:1px solid #d4c5a9;border-radius:8px;padding:10px 14px;font-size:14px;outline:none;width:100%}
-  input[type=text]:focus{border-color:#c8963e}
 </style>
 </head>
 <body class="p-4 md:p-8 flex flex-col items-center">
 
 <div class="w-full max-w-lg">
-  <h1 class="text-2xl md:text-3xl font-bold text-center text-ink mb-1">📱 收款码智能合并</h1>
-  <p class="text-center text-gray-500 text-sm mb-2">解析二维码 → 提取支付链接 → 生成同一个智能码</p>
-  <p class="text-center text-gray-400 text-xs mb-8">扫码自动判断微信/支付宝，跳转对应支付页</p>
+  <h1 class="text-2xl md:text-3xl font-bold text-center text-ink mb-1">📱 收款码合并</h1>
+  <p class="text-center text-gray-500 text-sm mb-8">微信 + 支付宝 → 一张图，各自独立可扫</p>
 
-  <!-- Step 1: Upload -->
+  <!-- Upload -->
   <div class="card p-5 mb-4">
     <h2 class="text-base font-semibold text-ink mb-4">① 上传收款码</h2>
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label for="wxIn" class="up-box" id="wxB" style="cursor:pointer">
+        <label for="wxIn" class="up-box" id="wxB">
           <input type="file" id="wxIn" accept="image/*" onchange="up('wx',this.files[0])" style="width:0;height:0;position:absolute;opacity:0">
-          <div id="wxH" class="text-center"><div class="text-3xl mb-1">💚</div><div class="text-sm text-gray-500">微信收款码</div><div class="text-xs text-gray-400">点击上传</div></div>
+          <div id="wxH" class="text-center"><div class="text-3xl mb-1">💚</div><div class="text-sm text-gray-500">微信收款码</div></div>
           <img id="wxM" style="display:none">
         </label>
-        <button id="wxC" class="text-xs text-red-400 mt-1 hidden w-full" onclick="event.preventDefault();cl('wx')">✕ 清除</button>
+        <button id="wxC" class="text-xs text-red-400 mt-1 hidden w-full" onclick="event.preventDefault();cl('wx')">✕</button>
       </div>
       <div>
-        <label for="aliIn" class="up-box" id="aliB" style="cursor:pointer">
+        <label for="aliIn" class="up-box" id="aliB">
           <input type="file" id="aliIn" accept="image/*" onchange="up('ali',this.files[0])" style="width:0;height:0;position:absolute;opacity:0">
-          <div id="aliH" class="text-center"><div class="text-3xl mb-1">💙</div><div class="text-sm text-gray-500">支付宝收款码</div><div class="text-xs text-gray-400">点击上传</div></div>
+          <div id="aliH" class="text-center"><div class="text-3xl mb-1">💙</div><div class="text-sm text-gray-500">支付宝收款码</div></div>
           <img id="aliM" style="display:none">
         </label>
-        <button id="aliC" class="text-xs text-red-400 mt-1 hidden w-full" onclick="event.preventDefault();cl('ali')">✕ 清除</button>
+        <button id="aliC" class="text-xs text-red-400 mt-1 hidden w-full" onclick="event.preventDefault();cl('ali')">✕</button>
       </div>
     </div>
   </div>
 
-  <!-- Step 2: Parsed URLs -->
-  <div id="urlCard" class="card p-5 mb-4 hidden">
-    <h2 class="text-base font-semibold text-ink mb-3">② 解析结果</h2>
-    <div class="space-y-3">
-      <div>
-        <label class="text-xs text-gray-500 flex items-center gap-1"><span class="tag-wx">微信</span> 支付链接</label>
-        <input type="text" id="wxUrl" readonly class="bg-gray-50 text-sm">
-        <p class="text-xs text-gray-400 mt-0.5" id="wxStatus"></p>
-      </div>
-      <div>
-        <label class="text-xs text-gray-500 flex items-center gap-1"><span class="tag-ali">支付宝</span> 支付链接</label>
-        <input type="text" id="aliUrl" readonly class="bg-gray-50 text-sm">
-        <p class="text-xs text-gray-400 mt-0.5" id="aliStatus"></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 3: Host URL -->
-  <div class="card p-5 mb-4">
-    <h2 class="text-base font-semibold text-ink mb-3">③ 设置跳转页托管地址</h2>
-    <p class="text-sm text-gray-500 mb-3">生成的 <code class="bg-gray-100 px-1 rounded">pay.html</code> 需托管到公网。推荐 GitHub Pages。</p>
-    <input type="text" id="hostIn" placeholder="https://rocgrey.github.io/miaosuan/pay.html" value="https://rocgrey.github.io/miaosuan/pay.html">
-  </div>
-
-  <!-- Step 4: Generate -->
+  <!-- Generate -->
   <div class="card p-5 mb-4 text-center">
-    <button id="go" class="btn btn-p" disabled onclick="gen()">🔀 生成智能二维码</button>
-    <p id="goHint" class="text-xs text-gray-400 mt-2">请先上传两个收款码，等待解析完成</p>
+    <button id="go" class="btn btn-p" disabled onclick="gen()">🔀 合并生成</button>
+    <p id="hint" class="text-xs text-gray-400 mt-2">请先上传两个收款码</p>
   </div>
 
   <!-- Result -->
   <div id="res" class="card p-5 hidden">
-    <h2 class="text-base font-semibold text-ink mb-1 text-center">✅ 智能收款码已生成</h2>
-    <p class="text-center text-xs text-gray-500 mb-4">同一个二维码，微信/支付宝扫出来自动跳对应支付页</p>
-    <div id="qrOut" class="flex justify-center mb-4"></div>
-    <div class="flex gap-2 mb-4">
-      <button class="btn btn-p flex-1 text-sm" onclick="dlQR()">📥 下载二维码</button>
-      <button class="btn btn-p flex-1 text-sm" style="background:#5D4E37" onclick="dlHTML()">📄 下载 pay.html</button>
-    </div>
-    <div class="bg-amber-50 rounded-lg p-4 text-left text-xs text-gray-700 space-y-1">
-      <p class="font-medium">📋 部署步骤：</p>
-      <p>1. 把 <code class="bg-white px-1 rounded">pay.html</code> 放到你的网站/GitHub Pages 根目录</p>
-      <p>2. 确认能打开：<code class="bg-white px-1 rounded" id="vUrl"></code></p>
-      <p>3. 把下载的二维码保存使用</p>
-    </div>
-  </div>
-
-  <!-- How it works -->
-  <div class="card p-5 mt-4">
-    <h2 class="text-base font-semibold text-ink mb-2">💡 原理</h2>
-    <div class="text-sm text-gray-600 space-y-1.5">
-      <p>1. <b>解析</b>上传的二维码图片，提取支付链接</p>
-      <p>2. <b>重组</b>为一个智能跳转页，内含两个支付链接</p>
-      <p>3. <b>生成</b>新二维码指向跳转页</p>
-      <p>4. 用户扫码 → 浏览器检测 → <span class="tag-wx">微信内</span>跳微信支付 / <span class="tag-ali">支付宝内</span>跳支付宝</p>
+    <h2 class="text-base font-semibold text-ink mb-1 text-center">✅ 合并结果</h2>
+    <p class="text-center text-xs text-gray-500 mb-4">两个码独立可扫，分别对准各自二维码即可</p>
+    <div class="flex justify-center mb-4"><img id="out" class="max-w-full rounded-xl border border-gray-200 shadow-sm"></div>
+    <div class="flex gap-3">
+      <button class="btn btn-p flex-1 text-sm" onclick="dl()">📥 下载</button>
+      <button class="btn flex-1 text-sm" style="background:#e8e0d0;color:#5D4E37" onclick="cp()">📋 复制</button>
     </div>
   </div>
 </div>
@@ -121,155 +69,124 @@
 <div id="toast" class="t" style="display:none"></div>
 
 <script>
-var wxData=null,aliData=null;
-var wxPayUrl=null,aliPayUrl=null;
-var payHtml=null,qrPng=null;
+var wxUrl=null,aliUrl=null,mergedUrl=null;
 
 function T(m){var t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none'},2000);}
 
-// ----- Upload & Decode -----
 function up(type,file){
   if(!file)return;
   var r=new FileReader();
   r.onload=function(e){
     var url=e.target.result;
-    // Show preview
     if(type==='wx'){
-      wxData=url;
+      wxUrl=url;
       document.getElementById('wxM').src=url;document.getElementById('wxM').style.display='block';
-      document.getElementById('wxH').style.display='none';document.getElementById('wxB').classList.add('done');
+      document.getElementById('wxH').style.display='none';
       document.getElementById('wxC').classList.remove('hidden');
     }else{
-      aliData=url;
+      aliUrl=url;
       document.getElementById('aliM').src=url;document.getElementById('aliM').style.display='block';
-      document.getElementById('aliH').style.display='none';document.getElementById('aliB').classList.add('done');document.getElementById('aliB').classList.add('ali');
+      document.getElementById('aliH').style.display='none';
       document.getElementById('aliC').classList.remove('hidden');
     }
-    T(type==='wx'?'✅ 微信收款码已上传，正在解析...':'✅ 支付宝收款码已上传，正在解析...');
-    decodeQR(type,url);
+    T(type==='wx'?'✅ 微信收款码已上传':'✅ 支付宝收款码已上传');
+    document.getElementById('go').disabled=!(wxUrl&&aliUrl);
+    document.getElementById('hint').textContent=(wxUrl&&aliUrl)?'两个收款码已就绪 ✓':'请先上传两个收款码';
   };
-  r.onerror=function(){T('❌ 读取失败，请重试');};
+  r.onerror=function(){T('❌ 读取失败');};
   r.readAsDataURL(file);
-}
-
-function decodeQR(type,dataUrl){
-  var img=new Image();
-  img.onload=function(){
-    var c=document.createElement('canvas');
-    var s=Math.max(img.width,img.height);
-    c.width=s;c.height=s;
-    var ctx=c.getContext('2d');
-    ctx.drawImage(img,(s-img.width)/2,(s-img.height)/2);
-    var imgData=ctx.getImageData(0,0,s,s);
-    var code=jsQR(imgData.data,s,s);
-    if(code&&code.data){
-      if(type==='wx'){
-        wxPayUrl=code.data;
-        document.getElementById('wxUrl').value=wxPayUrl;
-        document.getElementById('wxStatus').textContent='✅ 解析成功 · '+wxPayUrl.length+' 字符';
-      }else{
-        aliPayUrl=code.data;
-        document.getElementById('aliUrl').value=aliPayUrl;
-        document.getElementById('aliStatus').textContent='✅ 解析成功 · '+aliPayUrl.length+' 字符';
-      }
-      document.getElementById('urlCard').classList.remove('hidden');
-      T(type==='wx'?'✅ 微信链接已解析':'✅ 支付宝链接已解析');
-    }else{
-      if(type==='wx'){
-        wxPayUrl=null;
-        document.getElementById('wxUrl').value='';
-        document.getElementById('wxStatus').textContent='⚠️ 未识别到二维码，可手动粘贴链接到上方输入框';
-      }else{
-        aliPayUrl=null;
-        document.getElementById('aliUrl').value='';
-        document.getElementById('aliStatus').textContent='⚠️ 未识别到二维码，可手动粘贴链接到上方输入框';
-      }
-      document.getElementById('urlCard').classList.remove('hidden');
-      T(type==='wx'?'⚠️ 微信码解析失败，请手动填写链接':'⚠️ 支付宝码解析失败，请手动填写链接');
-      // Make input editable
-      document.getElementById(type==='wx'?'wxUrl':'aliUrl').readOnly=false;
-    }
-    chk();
-  };
-  img.onerror=function(){T('❌ 图片加载失败');};
-  img.src=dataUrl;
 }
 
 function cl(type){
   if(type==='wx'){
-    wxData=null;wxPayUrl=null;
-    document.getElementById('wxM').style.display='none';document.getElementById('wxH').style.display='';
-    document.getElementById('wxB').classList.remove('done');document.getElementById('wxC').classList.add('hidden');
-    document.getElementById('wxIn').value='';document.getElementById('wxUrl').value='';document.getElementById('wxStatus').textContent='';
-    document.getElementById('wxUrl').readOnly=true;
+    wxUrl=null;document.getElementById('wxM').style.display='none';document.getElementById('wxH').style.display='';
+    document.getElementById('wxC').classList.add('hidden');document.getElementById('wxIn').value='';
   }else{
-    aliData=null;aliPayUrl=null;
-    document.getElementById('aliM').style.display='none';document.getElementById('aliH').style.display='';
-    document.getElementById('aliB').classList.remove('done','ali');document.getElementById('aliC').classList.add('hidden');
-    document.getElementById('aliIn').value='';document.getElementById('aliUrl').value='';document.getElementById('aliStatus').textContent='';
-    document.getElementById('aliUrl').readOnly=true;
+    aliUrl=null;document.getElementById('aliM').style.display='none';document.getElementById('aliH').style.display='';
+    document.getElementById('aliC').classList.add('hidden');document.getElementById('aliIn').value='';
   }
-  if(!wxPayUrl&&!aliPayUrl)document.getElementById('urlCard').classList.add('hidden');
-  chk();
+  document.getElementById('go').disabled=!(wxUrl&&aliUrl);
+  document.getElementById('hint').textContent=(wxUrl&&aliUrl)?'两个收款码已就绪 ✓':'请先上传两个收款码';
 }
 
-function chk(){
-  // Read from inputs (user may have edited)
-  var w=document.getElementById('wxUrl').value.trim()||wxPayUrl;
-  var a=document.getElementById('aliUrl').value.trim()||aliPayUrl;
-  if(w)wxPayUrl=w;if(a)aliPayUrl=a;
-  var ok=!!(wxPayUrl&&aliPayUrl);
-  document.getElementById('go').disabled=!ok;
-  document.getElementById('goHint').textContent=ok?'解析完成，可以生成 ✓':'等待解析完成...';
-}
-
-// Add listeners for manual URL input
-document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('wxUrl').addEventListener('input',chk);
-  document.getElementById('aliUrl').addEventListener('input',chk);
-});
-
-// ----- Generate -----
 function gen(){
-  var wxU=document.getElementById('wxUrl').value.trim()||wxPayUrl;
-  var aliU=document.getElementById('aliUrl').value.trim()||aliPayUrl;
-  if(!wxU||!aliU)return T('请确认两个支付链接都已填写');
-  var host=document.getElementById('hostIn').value.trim();
-  if(!host)return T('请填写跳转页托管地址');
+  if(!wxUrl||!aliUrl)return T('请先上传两个收款码');
 
-  // Build pay.html
-  payHtml=buildPay(wxU,aliU);
+  var c=document.createElement('canvas');
+  var W=600,H=860;
+  c.width=W;c.height=H;
+  var ctx=c.getContext('2d');
 
-  // Show result
-  document.getElementById('res').classList.remove('hidden');
-  document.getElementById('vUrl').textContent=host;
-  document.getElementById('res').scrollIntoView({behavior:'smooth'});
+  // Background
+  ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,W,H);
 
-  // Generate QR code
-  var qrDiv=document.getElementById('qrOut');
-  qrDiv.innerHTML='';
-  new QRCode(qrDiv,{text:host,width:220,height:220,colorDark:'#2C2C2C',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  // Top decorative bar
+  ctx.fillStyle='#2C2C2C';ctx.fillRect(0,0,W,50);
+  ctx.fillStyle='#FFFFFF';ctx.font='bold 18px -apple-system,system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('📱 扫一扫付款',W/2,34);
 
-  setTimeout(function(){
-    var cv=qrDiv.querySelector('canvas');
-    if(cv)qrPng=cv.toDataURL('image/png');
-  },600);
+  var wxImg=new Image(),aliImg=new Image(),n=0;
+  function draw(){
+    n++;if(n<2)return;
 
-  T('✅ 智能二维码已生成');
+    // --- WeChat section (top half) ---
+    var wxY=70;
+    ctx.fillStyle='#F0FDF4';roundRect(ctx,20,wxY,W-40,350,16);ctx.fill();
+    ctx.strokeStyle='#07C160';ctx.lineWidth=2;roundRect(ctx,20,wxY,W-40,350,16);ctx.stroke();
+
+    ctx.fillStyle='#07C160';ctx.font='bold 20px -apple-system,system-ui,sans-serif';ctx.textAlign='center';
+    ctx.fillText('微信扫码支付',W/2,wxY+35);
+
+    var wxS=280,wxX=(W-wxS)/2,wxQY=wxY+50;
+    ctx.fillStyle='#FFFFFF';ctx.fillRect(wxX-4,wxQY-4,wxS+8,wxS+8);
+    ctx.drawImage(wxImg,wxX,wxQY,wxS,wxS);
+
+    // --- Divider ---
+    var divY=wxY+350+10;
+    ctx.fillStyle='#E8DCC8';ctx.fillRect(40,divY,W-80,1);
+    ctx.fillStyle='#FFFFFF';ctx.fillRect(W/2-30,divY-14,60,28);
+    ctx.fillStyle='#999';ctx.font='13px -apple-system,system-ui,sans-serif';ctx.textAlign='center';
+    ctx.fillText('或',W/2,divY+5);
+
+    // --- Alipay section (bottom half) ---
+    var aliY=divY+30;
+    ctx.fillStyle='#F0F7FF';roundRect(ctx,20,aliY,W-40,350,16);ctx.fill();
+    ctx.strokeStyle='#1677FF';ctx.lineWidth=2;roundRect(ctx,20,aliY,W-40,350,16);ctx.stroke();
+
+    ctx.fillStyle='#1677FF';ctx.font='bold 20px -apple-system,system-ui,sans-serif';
+    ctx.fillText('支付宝扫码支付',W/2,aliY+35);
+
+    var aliS=280,aliX=(W-aliS)/2,aliQY=aliY+50;
+    ctx.fillStyle='#FFFFFF';ctx.fillRect(aliX-4,aliQY-4,aliS+8,aliS+8);
+    ctx.drawImage(aliImg,aliX,aliQY,aliS,aliS);
+
+    // Footer
+    ctx.fillStyle='#999';ctx.font='12px -apple-system,system-ui,sans-serif';
+    ctx.fillText('请使用对应App扫一扫付款 · 两个二维码均独立可扫',W/2,H-15);
+
+    mergedUrl=c.toDataURL('image/png');
+    document.getElementById('out').src=mergedUrl;
+    document.getElementById('res').classList.remove('hidden');
+    document.getElementById('res').scrollIntoView({behavior:'smooth'});
+    T('✅ 合并完成');
+  }
+  wxImg.onload=draw;aliImg.onload=draw;
+  wxImg.onerror=function(){T('❌ 微信码加载失败');};
+  aliImg.onerror=function(){T('❌ 支付宝码加载失败');};
+  wxImg.src=wxUrl;aliImg.src=aliUrl;
 }
 
-function buildPay(wx,ali){
-  // Escape URLs for safe embedding in JS string
-  var w=wx.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"');
-  var a=ali.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"');
-  return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>收款</title>\n<style>\n*{margin:0;padding:0;box-sizing:border-box}\nbody{font-family:-apple-system,system-ui,sans-serif;background:#f8f6f2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}\n.card{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.08);padding:28px;max-width:380px;width:100%;text-align:center}\nh2{font-size:18px;color:#333;margin-bottom:4px}\n.sub{font-size:13px;color:#999;margin-bottom:16px}\n.loading{color:#999;font-size:14px;padding:20px}\n.btn{display:inline-block;margin-top:16px;padding:14px 40px;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;color:#fff}\n.btn-wx{background:#07C160}\n.btn-ali{background:#1677FF}\n.foot{font-size:12px;color:#bbb;margin-top:16px}\n</style>\n</head>\n<body>\n<div class="card" id="c"><div class="loading">⏳ 正在识别...</div></div>\n<script>\n(function(){\nvar u=navigator.userAgent||\'\',isWX=/MicroMessenger/i.test(u),isAli=/AlipayClient|Alipay/i.test(u);\nvar w=\''+w+'\',a=\''+a+'\',h=\'\';\nif(isWX){\n  h=\'<h2>💚 微信支付</h2><div class="sub">即将跳转微信支付页面</div><a class="btn btn-wx" href="\'+w+\'">前往微信支付</a><div class="foot">若未跳转请长按复制链接在微信中打开</div>\';\n  setTimeout(function(){location.href=w;},800);\n}else if(isAli){\n  h=\'<h2>💙 支付宝支付</h2><div class="sub">即将跳转支付宝支付页面</div><a class="btn btn-ali" href="\'+a+\'">前往支付宝支付</a><div class="foot">若未跳转请复制链接在支付宝中打开</div>\';\n  setTimeout(function(){location.href=a;},800);\n}else{\n  h=\'<h2>📱 请选择支付方式</h2><div class="sub">使用对应App扫码或点击</div><a class="btn btn-wx" href="\'+w+\'">💚 微信支付</a><br><br><a class="btn btn-ali" href="\'+a+\'">💙 支付宝支付</a><div class="foot">支持微信 / 支付宝</div>\';\n}\ndocument.getElementById(\'c\').innerHTML=h;\n})();\n</script>\n</body>\n</html>';
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
 }
 
-function dlQR(){if(!qrPng)return;var a=document.createElement('a');a.href=qrPng;a.download='smart_pay_qr.png';a.click();}
-function dlHTML(){
-  if(!payHtml)return;
-  var b=new Blob([payHtml],{type:'text/html;charset=utf-8'});
-  var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='pay.html';a.click();URL.revokeObjectURL(u);
+function dl(){
+  if(!mergedUrl)return;var a=document.createElement('a');a.href=mergedUrl;a.download='pay_qr.png';a.click();
+}
+function cp(){
+  if(!mergedUrl)return;
+  fetch(mergedUrl).then(function(r){return r.blob()}).then(function(b){
+    navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(function(){T('📋 已复制')}).catch(function(){dl();T('已自动下载');});
+  });
 }
 </script>
 </body>
