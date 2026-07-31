@@ -258,9 +258,25 @@ body {
       <button class="layout-tab" data-layout="horizontal">
         <span class="icon">⬌</span>左右排列
       </button>
+      <button class="layout-tab" data-layout="smart">
+        <span class="icon">◎</span>合一码
+      </button>
     </div>
 
-    <!-- Style -->
+    <!-- Smart redirect URL (only for mode 3) -->
+    <div id="smartUrlRow" style="display:none;margin-bottom:14px">
+      <label style="font-size:13px;color:var(--muted);display:block;margin-bottom:4px">
+        跳转页托管地址（需公网可访问）
+      </label>
+      <input type="text" id="hostInput" placeholder="https://rocgrey.github.io/miaosuan/pay.html"
+             style="width:100%;border:1px solid #d4c5a9;border-radius:8px;padding:10px 14px;font-size:14px;outline:none">
+      <p style="font-size:11px;color:var(--muted);margin-top:4px">
+        生成 pay.html 后上传到 GitHub Pages 或其他静态托管，填这里的地址
+      </p>
+    </div>
+
+    <!-- Style (hidden for smart mode) -->
+    <div id="styleRow">
     <div class="style-row">
       <div class="style-item">
         <label>背景色</label>
@@ -275,6 +291,7 @@ body {
         <input type="range" id="cornerRadius" min="0" max="30" value="12">
       </div>
     </div>
+    </div>
   </div>
 
   <!-- Step 4: Generate -->
@@ -285,8 +302,8 @@ body {
     <p style="font-size:12px;color:var(--muted);margin-top:8px" id="genHint">请先上传两个收款码</p>
   </div>
 
-  <!-- Result -->
-  <div class="card result-section" id="resultSection">
+  <!-- Result: Image Merge (vertical/horizontal) -->
+  <div class="card result-section" id="resultImgSection">
     <div class="card-title"><span class="num">✓</span> 生成结果</div>
     <div class="result-img-wrap">
       <img id="resultImg" alt="合并收款码">
@@ -294,6 +311,27 @@ body {
     <div class="result-actions">
       <button class="btn btn-primary" style="flex:1" onclick="downloadResult()">📥 下载 PNG</button>
       <button class="btn btn-outline" style="flex:1" onclick="copyResult()">📋 复制图片</button>
+    </div>
+  </div>
+
+  <!-- Result: Smart Redirect (合一码) -->
+  <div class="card result-section" id="resultSmartSection">
+    <div class="card-title"><span class="num">✓</span> 合一码生成结果</div>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:12px">
+      同一个二维码，微信扫→微信支付 / 支付宝扫→支付宝支付
+    </p>
+    <div class="result-img-wrap">
+      <img id="resultSmartQR" alt="合一收款码" style="width:240px;height:240px">
+    </div>
+    <div class="result-actions" style="margin-bottom:10px">
+      <button class="btn btn-primary" style="flex:1" onclick="downloadSmartQR()">📥 下载二维码</button>
+      <button class="btn btn-outline" style="flex:1" onclick="downloadPayHtml()">📄 下载 pay.html</button>
+    </div>
+    <div style="background:#FFF9E6;border-radius:10px;padding:12px;font-size:12px;color:#6B5E3E;text-align:left">
+      <p style="font-weight:700;margin-bottom:4px">📋 部署步骤：</p>
+      1. 把下载的 <code style="background:#fff;padding:1px 4px;border-radius:3px">pay.html</code> 放到你的网站或 GitHub Pages 根目录<br>
+      2. 确认公网能打开这个 pay.html<br>
+      3. 把这上面的二维码保存使用
     </div>
   </div>
 </div>
@@ -316,7 +354,8 @@ const state = {
   bgColor: '#ffffff',
   labelColor: '#3c3028',
   cornerRadius: 12,
-  resultDataUrl: null
+  resultDataUrl: null,
+  payHtmlContent: null
 };
 
 // ---- Toast ----
@@ -463,6 +502,11 @@ document.getElementById('layoutTabs').addEventListener('click', function(e){
   document.querySelectorAll('.layout-tab').forEach(function(t){ t.classList.remove('active'); });
   tab.classList.add('active');
   state.layout = tab.dataset.layout;
+  // Toggle smart URL input and style row
+  var isSmart = state.layout === 'smart';
+  document.getElementById('smartUrlRow').style.display = isSmart ? '' : 'none';
+  document.getElementById('styleRow').style.display = isSmart ? 'none' : '';
+  document.getElementById('genBtn').textContent = isSmart ? '◎ 生成合一收款码' : '🔀 生成合并收款码';
 });
 
 /* ---- Style Inputs ---- */
@@ -483,6 +527,16 @@ function updateUI() {
 function generate() {
   if (!state.wx.dataUrl || !state.ali.dataUrl) return toast('请先上传两个收款码');
 
+  // Hide previous results
+  document.getElementById('resultImgSection').classList.remove('visible');
+  document.getElementById('resultSmartSection').classList.remove('visible');
+
+  if (state.layout === 'smart') {
+    generateSmart();
+    return;
+  }
+
+  // Image merge mode
   var wxImg = new Image();
   var aliImg = new Image();
   var loaded = 0;
@@ -567,9 +621,56 @@ function doGenerate(wxImg, aliImg) {
 
   state.resultDataUrl = c.toDataURL('image/png');
   document.getElementById('resultImg').src = state.resultDataUrl;
-  document.getElementById('resultSection').classList.add('visible');
-  document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('resultImgSection').classList.add('visible');
+  document.getElementById('resultImgSection').scrollIntoView({ behavior: 'smooth' });
   toast('✅ 合并完成');
+}
+
+/* ---- Smart Redirect Generation ---- */
+function generateSmart() {
+  var hostUrl = document.getElementById('hostInput').value.trim();
+  if (!hostUrl) return toast('请填写跳转页托管地址');
+
+  // Generate pay.html
+  var wxUrl = state.wx.dataUrl;
+  var aliUrl = state.ali.dataUrl;
+  state.payHtmlContent = buildPayHtml(wxUrl, aliUrl);
+
+  // Generate QR code URL via API
+  var qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(hostUrl);
+  document.getElementById('resultSmartQR').src = qrApiUrl;
+  document.getElementById('resultSmartSection').classList.add('visible');
+  document.getElementById('resultSmartSection').scrollIntoView({ behavior: 'smooth' });
+  toast('✅ 合一码已生成');
+}
+
+function buildPayHtml(wxDataUrl, aliDataUrl) {
+  // Escape URLs for safe embedding
+  var w = wxDataUrl.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  var a = aliDataUrl.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>收款</title>\n<style>\n*{margin:0;padding:0;box-sizing:border-box}\nbody{font-family:-apple-system,system-ui,sans-serif;background:#f8f6f2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}\n.card{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.08);padding:28px;max-width:380px;width:100%;text-align:center}\nh2{font-size:19px;color:#333;margin-bottom:4px}\n.sub{font-size:13px;color:#999;margin-bottom:16px}\n.qr-box{border-radius:16px;padding:16px;margin:12px 0}\n.qr-box.wx{background:#f0fdf4;border:2px solid #07c160}\n.qr-box.ali{background:#f0f7ff;border:2px solid #1677ff}\n.qr-img{width:220px;height:220px;border-radius:10px;border:1px solid #eee;object-fit:contain}\n.tag{display:inline-block;padding:4px 14px;border-radius:12px;font-size:13px;color:#fff;margin-bottom:8px;font-weight:600}\n.tag.wx{background:#07c160}\n.tag.ali{background:#1677ff}\n.foot{font-size:12px;color:#bbb;margin-top:14px}\n</style>\n</head>\n<body>\n<div class="card" id="c"><p style="color:#999;font-size:14px">⏳ 识别中...</p></div>\n<script>\n(function(){\nvar u=navigator.userAgent||\'\',isWX=/MicroMessenger/i.test(u),isAli=/AlipayClient|Alipay/i.test(u);\nvar wx=\''+w+'\',ali=\''+a+'\',h=\'\';\nif(isWX){\n  h=\'<h2>💚 微信支付</h2><div class="sub">长按识别二维码付款</div><div class="qr-box wx"><span class="tag wx">微信收款码</span><br><img class="qr-img" src="\'+wx+\'" alt="微信收款码"></div><div class="foot">仅支持微信支付</div>\';\n}else if(isAli){\n  h=\'<h2>💙 支付宝支付</h2><div class="sub">打开支付宝扫一扫付款</div><div class="qr-box ali"><span class="tag ali">支付宝收款码</span><br><img class="qr-img" src="\'+ali+\'" alt="支付宝收款码"></div><div class="foot">仅支持支付宝支付</div>\';\n}else{\n  h=\'<h2>📱 选择支付方式</h2><div class="sub">使用对应App扫码</div><div class="qr-box wx"><span class="tag wx">微信收款码</span><br><img class="qr-img" src="\'+wx+\'" alt="微信收款码"></div><div class="qr-box ali"><span class="tag ali">支付宝收款码</span><br><img class="qr-img" src="\'+ali+\'" alt="支付宝收款码"></div><div class="foot">支持微信 / 支付宝</div>\';\n}\ndocument.getElementById(\'c\').innerHTML=h;\n})();\n</script>\n</body>\n</html>';
+}
+
+function downloadSmartQR() {
+  var url = document.getElementById('resultSmartQR').src;
+  if (!url) return;
+  // Fetch the QR image and download
+  fetch(url).then(function(r){return r.blob()}).then(function(b){
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = 'smart_pay_qr.png'; a.click();
+    URL.revokeObjectURL(a.href);
+    toast('📥 二维码下载中...');
+  }).catch(function(){ toast('❌ 下载失败，请右键保存二维码图片'); });
+}
+
+function downloadPayHtml() {
+  if (!state.payHtmlContent) return;
+  var blob = new Blob([state.payHtmlContent], { type: 'text/html;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'pay.html'; a.click();
+  URL.revokeObjectURL(url);
+  toast('📄 pay.html 已下载');
 }
 
 /* Crop an image to the specified rectangle, return {canvas, img} */
