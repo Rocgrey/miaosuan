@@ -57,7 +57,7 @@ body {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center;
   cursor: pointer; transition: all .2s;
-  position: relative; overflow: hidden;
+  overflow: hidden;
   background: #fefcf8;
 }
 .upload-zone:hover, .upload-zone.drag-over {
@@ -65,14 +65,16 @@ body {
 }
 .upload-zone.has-image { border-style: solid; border-color: #c8b88a; }
 .upload-zone img {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: contain; padding: 8px;
+  width: 100%; height: 100%; object-fit: contain; padding: 8px;
+  position: relative; z-index: 1; pointer-events: none;
 }
-.upload-zone .placeholder { text-align: center; pointer-events: none; }
+.upload-zone .placeholder { text-align: center; pointer-events: none; position: relative; z-index: 1; }
 .upload-zone .placeholder .icon { font-size: 36px; margin-bottom: 4px; }
 .upload-zone .placeholder .label { font-size: 14px; font-weight: 600; }
 .upload-zone .placeholder .hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
-.upload-zone input[type=file] { width: 0; height: 0; position: absolute; opacity: 0; }
+.upload-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2;
+}
 .clear-btn {
   display: none; margin-top: 6px; font-size: 12px; color: #e05a5a;
   background: none; border: none; cursor: pointer; width: 100%; text-align: center;
@@ -188,7 +190,7 @@ body {
     <div class="upload-row">
       <!-- WeChat -->
       <div>
-        <label class="upload-zone" id="wxZone" for="wxInput">
+        <div class="upload-zone" id="wxZone">
           <input type="file" id="wxInput" accept="image/*">
           <div class="placeholder" id="wxPlaceholder">
             <div class="icon">💚</div>
@@ -196,12 +198,12 @@ body {
             <div class="hint">点击或拖拽上传</div>
           </div>
           <img id="wxPreview" alt="微信码预览" style="display:none">
-        </label>
+        </div>
         <button class="clear-btn" id="wxClear">✕ 清除</button>
       </div>
       <!-- Alipay -->
       <div>
-        <label class="upload-zone" id="aliZone" for="aliInput">
+        <div class="upload-zone" id="aliZone">
           <input type="file" id="aliInput" accept="image/*">
           <div class="placeholder" id="aliPlaceholder">
             <div class="icon">💙</div>
@@ -209,7 +211,7 @@ body {
             <div class="hint">点击或拖拽上传</div>
           </div>
           <img id="aliPreview" alt="支付宝码预览" style="display:none">
-        </label>
+        </div>
         <button class="clear-btn" id="aliClear">✕ 清除</button>
       </div>
     </div>
