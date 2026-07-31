@@ -258,9 +258,6 @@ body {
       <button class="layout-tab" data-layout="horizontal">
         <span class="icon">⬌</span>左右排列
       </button>
-      <button class="layout-tab" data-layout="pip">
-        <span class="icon">⊞</span>主副叠加
-      </button>
     </div>
 
     <!-- Style -->
@@ -276,10 +273,6 @@ body {
       <div class="style-item">
         <label>圆角</label>
         <input type="range" id="cornerRadius" min="0" max="30" value="12">
-      </div>
-      <div class="style-item">
-        <label>主码占比</label>
-        <input type="range" id="mainRatio" min="50" max="85" value="70">
       </div>
     </div>
   </div>
@@ -323,7 +316,6 @@ const state = {
   bgColor: '#ffffff',
   labelColor: '#3c3028',
   cornerRadius: 12,
-  mainRatio: 70,
   resultDataUrl: null
 };
 
@@ -471,17 +463,13 @@ document.getElementById('layoutTabs').addEventListener('click', function(e){
   document.querySelectorAll('.layout-tab').forEach(function(t){ t.classList.remove('active'); });
   tab.classList.add('active');
   state.layout = tab.dataset.layout;
-  // Toggle mainRatio visibility
-  document.getElementById('mainRatio').parentElement.style.display = state.layout === 'pip' ? '' : 'none';
 });
 
 /* ---- Style Inputs ---- */
 document.getElementById('bgColor').addEventListener('input', function(){ state.bgColor = this.value; });
 document.getElementById('labelColor').addEventListener('input', function(){ state.labelColor = this.value; });
 document.getElementById('cornerRadius').addEventListener('input', function(){ state.cornerRadius = parseInt(this.value); });
-document.getElementById('mainRatio').addEventListener('input', function(){ state.mainRatio = parseInt(this.value); });
 // Init
-document.getElementById('mainRatio').parentElement.style.display = 'none';
 
 /* ---- UI Updates ---- */
 function updateUI() {
@@ -518,7 +506,6 @@ function doGenerate(wxImg, aliImg) {
   var bgColor = state.bgColor;
   var labelColor = state.labelColor;
   var r = state.cornerRadius;
-  var ratio = state.mainRatio / 100;
 
   // Extract cropped regions
   var wxC = cropImage(wxImg, state.wxCrop);
@@ -576,34 +563,6 @@ function doGenerate(wxImg, aliImg) {
     ctx.fillStyle = '#aaa'; ctx.font = '12px -apple-system,system-ui,sans-serif';
     ctx.fillText('两个码独立可扫 · 请使用对应 App', W / 2, H - 14);
 
-  } else if (layout === 'pip') {
-    // Main (WeChat) + PIP (Alipay) overlay
-    W = 600; H = 600;
-    c.width = W; c.height = H;
-    ctx.fillStyle = bgColor; ctx.fillRect(0, 0, W, H);
-    drawRoundRect(ctx, 0, 0, W, H, r); ctx.clip();
-
-    var mainS = Math.round(W * ratio / 100 * 0.85);
-    var mx = (W - mainS) / 2, my = 30;
-    // WeChat main
-    ctx.fillStyle = '#F0FDF4'; drawRoundRect(ctx, mx - 14, my - 44, mainS + 28, mainS + 64, 12); ctx.fill();
-    ctx.strokeStyle = '#07c160'; ctx.lineWidth = 2; drawRoundRect(ctx, mx - 14, my - 44, mainS + 28, mainS + 64, 12); ctx.stroke();
-    ctx.fillStyle = '#07c160'; ctx.font = 'bold 18px -apple-system,system-ui,sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('微信扫码支付', W / 2, my - 20);
-    ctx.fillStyle = '#fff'; ctx.fillRect(mx - 2, my - 2, mainS + 4, mainS + 4);
-    ctx.drawImage(wxC.canvas, mx, my, mainS, mainS);
-
-    // Alipay PIP (bottom-right corner)
-    var pipS = Math.round(W * (1 - ratio / 100) * 0.9);
-    var px = W - pipS - 16, py = H - pipS - 56;
-    ctx.fillStyle = '#fff'; drawRoundRect(ctx, px - 6, py - 6, pipS + 12, pipS + 12, 10); ctx.fill();
-    ctx.strokeStyle = '#1677ff'; ctx.lineWidth = 2; drawRoundRect(ctx, px - 6, py - 6, pipS + 12, pipS + 12, 10); ctx.stroke();
-    ctx.drawImage(aliC.canvas, px, py, pipS, pipS);
-    ctx.fillStyle = '#1677ff'; ctx.font = 'bold 11px -apple-system,system-ui,sans-serif';
-    ctx.fillText('支付宝', W / 2 + pipS / 2 + 4, py + pipS + 18);
-
-    ctx.fillStyle = '#aaa'; ctx.font = '12px -apple-system,system-ui,sans-serif';
-    ctx.fillText('扫码分别识别', W / 2, H - 14);
   }
 
   state.resultDataUrl = c.toDataURL('image/png');
